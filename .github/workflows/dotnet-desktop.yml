@@ -1,0 +1,32 @@
+name: Build
+on:
+  push:
+    branches: [ "mistress" ]
+  pull_request:
+    branches: [ "mistress" ]
+
+jobs:
+  build:
+    name: Build and upload
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{env.DOTNET_VERSION}}
+      - name: Install dependencies
+        run: dotnet restore
+      - name: Build (Release)
+        run: >          
+          mkdir -p ${{ github.workspace }}/bin
+          
+          dotnet publish -c Release -p:PublishDir=${{ github.workspace }}/bin/launch.exe -r win-x64 -p:IncludeNativeLibrariesForSelfExtract=true -p:UseAppHost=true -p:PublishSingleFile=true --self-contained true
+      - name: Upload as artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-build
+          path: ${{github.workspace}}/bin/launch.exe
+          if-no-files-found: error
